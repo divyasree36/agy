@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BigQuery Pulse | Release Notes Tracker</title>
+    <!-- Meta Descriptions for SEO -->
+    <meta name="description" content="Track and share the latest Google Cloud BigQuery release notes. Filter, search, and tweet updates with an elegant glassmorphism dashboard.">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Background Glow Blobs -->
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
+    <div class="glow-orb orb-3"></div>
+
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="logo-area">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="url(#logo-grad-1)"/>
+                        <path d="M2 17L12 22L22 17M2 12L12 17L22 12" stroke="url(#logo-grad-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <defs>
+                            <linearGradient id="logo-grad-1" x1="2" y1="2" x2="22" y2="12" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#00f2fe"/>
+                                <stop offset="1" stop-color="#4facfe"/>
+                            </linearGradient>
+                            <linearGradient id="logo-grad-2" x1="2" y1="12" x2="22" y2="22" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#b180ff"/>
+                                <stop offset="1" stop-color="#803cff"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="gradient-text">BigQuery Pulse</h1>
+                    <p class="subtitle">Cloud Release Intelligence & Sharing</p>
+                </div>
+            </div>
+            
+            <div class="header-actions">
+                <div class="status-indicator">
+                    <span class="pulse-dot"></span>
+                    <span id="last-updated-text">Checking feed...</span>
+                </div>
+                <button id="refresh-btn" class="btn btn-primary" title="Refresh Release Notes">
+                    <svg class="icon spinner-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                    </svg>
+                    <span>Refresh</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Search & Category Filters -->
+        <section class="controls-panel">
+            <div class="search-box">
+                <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"/>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <input type="text" id="search-input" placeholder="Search release notes (e.g. partition, pricing, JSON)..." autocomplete="off">
+                <button id="clear-search-btn" class="clear-btn" style="display: none;">&times;</button>
+            </div>
+
+            <div class="filters-container">
+                <div class="filter-tabs" role="tablist">
+                    <button class="filter-tab active" data-category="all" role="tab" aria-selected="true">
+                        All <span class="badge count-all">-</span>
+                    </button>
+                    <button class="filter-tab" data-category="Feature" role="tab" aria-selected="false">
+                        Features <span class="badge count-feature">-</span>
+                    </button>
+                    <button class="filter-tab" data-category="Change" role="tab" aria-selected="false">
+                        Changes <span class="badge count-change">-</span>
+                    </button>
+                    <button class="filter-tab" data-category="Announcement" role="tab" aria-selected="false">
+                        Announcements <span class="badge count-announcement">-</span>
+                    </button>
+                    <button class="filter-tab" data-category="Breaking" role="tab" aria-selected="false">
+                        Breaking <span class="badge count-breaking">-</span>
+                    </button>
+                    <button class="filter-tab" data-category="Issue" role="tab" aria-selected="false">
+                        Issues <span class="badge count-issue">-</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Stats Overview Banner -->
+        <div class="stats-overview" id="stats-banner" style="display: none;">
+            <div class="stat-item">
+                <span class="stat-val" id="stat-total">0</span>
+                <span class="stat-lbl">Total Notes</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-val text-feature" id="stat-features">0</span>
+                <span class="stat-lbl">Features</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-val text-change" id="stat-changes">0</span>
+                <span class="stat-lbl">Changes</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-val text-breaking" id="stat-breaking">0</span>
+                <span class="stat-lbl">Breaking</span>
+            </div>
+        </div>
+
+        <!-- Release Notes Cards Feed -->
+        <main class="feed-section">
+            <!-- Loading State -->
+            <div id="loading-state" class="feed-state">
+                <div class="spinner-container">
+                    <div class="double-bounce1"></div>
+                    <div class="double-bounce2"></div>
+                </div>
+                <p>Retrieving BigQuery release notes...</p>
+            </div>
+
+            <!-- Error State -->
+            <div id="error-state" class="feed-state error" style="display: none;">
+                <div class="error-icon">⚠️</div>
+                <h3>Failed to load release notes</h3>
+                <p id="error-message">Unable to fetch feed. Please try again.</p>
+                <button id="retry-btn" class="btn btn-secondary">Retry Fetch</button>
+            </div>
+
+            <!-- Empty State -->
+            <div id="empty-state" class="feed-state" style="display: none;">
+                <div class="empty-icon">🔍</div>
+                <h3>No release notes match your search</h3>
+                <p>Try using different keywords or clearing filters.</p>
+                <button id="clear-filters-btn" class="btn btn-secondary">Clear Search & Filters</button>
+            </div>
+
+            <!-- Grid Feed -->
+            <div id="notes-grid" class="notes-grid" style="display: none;">
+                <!-- Cards injected dynamically via JS -->
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <p>BigQuery Pulse &copy; 2026. Data sourced from <a href="https://docs.cloud.google.com/feeds/bigquery-release-notes.xml" target="_blank" rel="noopener noreferrer">GCP Release Notes Atom Feed</a>.</p>
+        </footer>
+    </div>
+
+    <!-- Multi-Tweet Action Bar (Slides up when cards are selected) -->
+    <div id="multi-tweet-bar" class="multi-tweet-bar">
+        <div class="bar-content">
+            <div class="selection-info">
+                <span class="selection-count" id="selected-count">0</span>
+                <span>updates selected for sharing</span>
+            </div>
+            <div class="bar-actions">
+                <button id="clear-selection-btn" class="btn btn-ghost">Deselect All</button>
+                <button id="compose-thread-btn" class="btn btn-accent">
+                    <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                    </svg>
+                    <span>Tweet Compilation</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Twitter Composer Modal -->
+    <div id="tweet-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content glassmorphism">
+            <div class="modal-header">
+                <h3>Compose Tweet</h3>
+                <button id="close-modal-btn" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="tweet-card">
+                    <div class="user-avatar-placeholder">
+                        <span>BQ</span>
+                    </div>
+                    <div class="tweet-composer-area">
+                        <textarea id="tweet-textarea" placeholder="What's happening?"></textarea>
+                        <div class="char-counter-container">
+                            <span id="char-counter">0</span>/280
+                        </div>
+                    </div>
+                </div>
+                <div id="tweet-warning" class="tweet-warning" style="display: none;">
+                    ⚠️ Note exceeds standard 280-character limit. It will open as a single post, but you may want to edit it or post it as a thread.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancel-tweet-btn" class="btn btn-ghost">Cancel</button>
+                <button id="share-intent-btn" class="btn btn-accent">
+                    <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                    </svg>
+                    <span>Open in Twitter</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
